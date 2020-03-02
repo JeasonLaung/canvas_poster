@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+	<style>
+		*{
+			margin: 0;
+			padding: 0;
+		}
+	</style>
+</head>
+<body>	
+	<img src="" alt="" id="image"/>
+	<canvas 
+	id="myCanvas" 
+	width="300" 
+	height="300">
+	</canvas>
+
+	<script>
+		
+		let config = [
+			/// 全部按照750为标准设置
+			{
+				// fillText
+				"type": "poster",
+				"url": "./images/3.png"
+			},
+			/// 全部按照750为标准设置
+			{
+				// fillText
+				"type": "text",
+				"content": "哈哈哈哈",
+				"style": {
+					"top": 0,
+					"left": 0,
+					"fontSize": 32,
+					"color": "#fff",
+					"textAlign": "center"
+				}
+			},
+			{
+				// drawImage
+				"type": "image",
+				"url": "./images/4.jpg",
+				"style": {
+					"borderRadius": 150,
+					"top": 58,
+					"left": 101,
+					/// 用户设置比例，没有就默认图片比例和大小
+					"width": 65,
+					"height": 65
+				}
+			},
+			{
+				// drawImage
+				"type": "image",
+				"url": "./images/4.jpg",
+				"style": {
+					"borderRadius": 150,
+					"top": 857,
+					"left": 240,
+					/// 用户设置比例，没有就默认图片比例和大小
+					"width": 139,
+					"height": 139
+				}
+			}
+		]
+		
+		/// 取出并删除
+		let posterUrl = config[0]['url']
+		config.splice(0, 1)
+
+		/// 初始化配置
+		let canvas    = document.getElementById("myCanvas")
+		let img       = new Image()
+		let img1      = new Image()
+		img.src       = posterUrl
+		img1.src      = './images/2.png'
+		
+		/// 所有promise
+		let promises = []
+		/// 对应图片json
+		const imageObject = {}
+
+		// 预加载图片
+		function loadImage(url) {
+			return new Promise((resolve, reject) => {
+				let img = new Image()
+				img.onload = function () {
+					imageObject[url] = this
+					resolve(this)
+				}
+				img.onerror = reject
+				img.src = url
+			})
+		}
+		
+		/// 所有其他图片准备加载
+		for(let i in config) {
+			if (config[i]['type'] == 'image') {
+				promises.push(loadImage(config[i]['url']))
+			}
+		}
+
+		/* 海报加载 */
+		img.onload = function () {
+			let {width, height} = this
+			console.log({title: '海报宽高',width, height})
+			canvas.height = height
+			canvas.width  = width
+
+
+			var ctx  = canvas.getContext("2d")
+			ctx.drawImage(this, 0, 0)
+
+			// // 图片全部加载完
+			Promise.all(promises).then((data) => {
+				console.log(promises)
+				config.forEach((item) => {
+					/* 保存一波先 */
+					if (item.type == 'image') {
+						let imageWidth  = item.style && item.style.width  ? item.style.width  : imageObject[item['url']].width
+						let imageHeight = item.style && item.style.height ? item.style.height : imageObject[item['url']].height
+						let imageTop    = item.style && item.style.top    ? item.style.top    : 0
+						let imageLeft   = item.style && item.style.left   ? item.style.left   : 0
+						let imageBorderRadius = item.style && item.style.borderRadius   ? item.style.borderRadius   : 0
+
+						if (item.style.borderRadius) {
+							var r = imageWidth
+							var d = 2 * r
+							var x = imageLeft
+							var y = imageTop
+							var cx = x + r
+    					var cy = y + r
+							console.log(r)
+							ctx.save()
+							ctx.arc(cx, cy, r, 0, 2 * Math.PI)
+							ctx.clip()
+							ctx.drawImage(imageObject[item['url']], x, y, d, d)
+							ctx.restore()
+						} else {
+							ctx.drawImage(imageObject[item['url']], imageLeft, imageTop, imageWidth, imageHeight)
+						}
+						
+					} else if (item.type == 'text') {
+						let textTop    = item.style && item.style.top    ? item.style.top    : 0
+						let textLeft   = item.style && item.style.left   ? item.style.left   : 0
+						let textColor  = item.style && item.style.left   ? item.style.left   : 0
+					}
+				})
+
+				/* 输出照片 */
+				let imgSrc = canvas.toDataURL('image/png')
+				console.log(imgSrc)
+				/* 生成 */
+				let image  = document.getElementById("image")
+				image.src = imgSrc
+
+			}).catch(e => {
+				console.error(e)
+			})
+		}
+
+		
+	</script>
+
+</body>
+</html>
